@@ -1,0 +1,7 @@
+version: 2
+sources:
+  - name: fda_food
+    database: bigquery-public-data
+    schema: fda_food
+    tables:
+      - name: food_events
