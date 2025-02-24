@@ -1,7 +1,11 @@
 # data_contracts/food_events.yml
+apiVersion: v3.0.1
+kind: DataContract
+
 schema:
   - name: tbl
-    physicalName: {{ source('food_events') }}
+    logicalType: object
+    physicalName: food_events
     properties:
       - name: report_number
         logicalType: string

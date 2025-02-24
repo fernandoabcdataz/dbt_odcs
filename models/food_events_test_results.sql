@@ -1,9 +1,13 @@
--- models/food_events.sql
-{{ config(materialized='incremental') }}
+-- models/food_events_test_results.sql
+{{ config(materialized='table') }}
 
 {% set contract_yaml %}
+apiVersion: v3.0.1
+kind: DataContract
+
 schema:
   - name: tbl
+    logicalType: object
     physicalName: food_events
     properties:
       - name: report_number
@@ -103,4 +107,10 @@ slaProperties:
     description: Ensures data is refreshed daily, with date_created no older than 1 day
 {% endset %}
 
-{{ process_data_contract('fda_food', 'food_events', contract_yaml) }}
+{# 
+-- For file-based approach, uncomment the following:
+-- {{ process_data_contract('fda_food', 'food_events', contract_path=var('contracts_path') ~ '/food_events.yml') }}
+#}
+
+{# for embedded YAML approach: #}
+{{ process_data_contract('fda_food', 'food_events', contract_yaml=contract_yaml) }}
