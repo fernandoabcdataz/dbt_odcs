@@ -1,5 +1,5 @@
 -- dbt_odcs/macros/process_quality_tests.sql
-{% macro process_quality_tests(source_name, table_name, contract) %}
+{% macro process_quality_tests(source_name, table_name, contract, api_version, contract_id, contract_name, contract_version, contract_status) %}
     {% set source_ref = source(source_name, table_name) %}
     {% set tests = [] %}
     
@@ -19,39 +19,49 @@
                         'table_name': table_name,
                         'column_name': columns_str,
                         'rule_name': 'unique_combination',
-                        'description': quality.get('description', 'Ensures unique combination of columns: ' ~ columns_str),
-                        'sql_check': 'COUNT(*) = COUNT(DISTINCT ' ~ columns_str ~ ')',
-                        'sql': 'SELECT ' ~ columns_str ~ ', COUNT(*) as count FROM ' ~ source_ref ~ ' GROUP BY ' ~ columns_str ~ ' HAVING COUNT(*) > 1 LIMIT 10',
-                        'sql_count': 'SELECT COUNT(*) FROM (SELECT ' ~ columns_str ~ ', COUNT(*) FROM ' ~ source_ref ~ ' GROUP BY ' ~ columns_str ~ ' HAVING COUNT(*) > 1)'
+                        'description': quality.get('description', 'ensures unique combination of columns: ' ~ columns_str),
+                        'api_version': api_version,
+                        'contract_id': contract_id,
+                        'contract_name': contract_name,
+                        'contract_version': contract_version,
+                        'contract_status': contract_status,
+                        'sql_check': 'count(*) = count(distinct ' ~ columns_str ~ ')',
+                        'sql': 'select ' ~ columns_str ~ ', count(*) as count from ' ~ source_ref ~ ' group by ' ~ columns_str ~ ' having count(*) > 1 limit 10',
+                        'sql_count': 'select count(*) from (select ' ~ columns_str ~ ', count(*) from ' ~ source_ref ~ ' group by ' ~ columns_str ~ ' having count(*) > 1)'
                     }) %}
                 {% endif %}
             {# duplicate count test (rows or %) #}
             {% elif quality.rule == 'duplicateCount' %}
                 {% set column = quality.column | default('') %}
                 {% if column %}
-                    {% set duplicates_query = 'SELECT COUNT(*) - COUNT(DISTINCT ' ~ column ~ ') AS duplicate_count FROM ' ~ source_ref %}
+                    {% set duplicates_query = 'select count(*) - count(distinct ' ~ column ~ ') as duplicate_count from ' ~ source_ref %}
                     {% if quality.unit == 'percent' %}
-                        {% set total_query = 'SELECT COUNT(*) AS total FROM ' ~ source_ref %}
-                        {% set check = '(SELECT duplicate_count * 100.0 / total FROM (' ~ duplicates_query ~ ') AS dup, (' ~ total_query ~ ') AS tot) <= ' ~ quality.mustBeLessThan %}
+                        {% set total_query = 'select count(*) as total from ' ~ source_ref %}
+                        {% set check = '(select duplicate_count * 100.0 / total from (' ~ duplicates_query ~ ') as dup, (' ~ total_query ~ ') as tot) <= ' ~ quality.mustBeLessThan %}
                     {% else %}
-                        {% set check = duplicates_query ~ ' <= ' ~ quality.mustBeLessThan %}
+                        {% set check = '(select duplicate_count from (' ~ duplicates_query ~ ')) <= ' ~ quality.mustBeLessThan %}
                     {% endif %}
                     {% do tests.append({
                         'test_type': 'Data Quality',
                         'table_name': table_name,
                         'column_name': column,
                         'rule_name': 'duplicate_count',
-                        'description': quality.get('description', 'Ensures duplicates are within limit: ' ~ quality.mustBeLessThan ~ ' ' ~ quality.unit),
+                        'description': quality.get('description', 'ensures duplicates are within limit: ' ~ quality.mustBeLessThan ~ ' ' ~ quality.unit),
+                        'api_version': api_version,
+                        'contract_id': contract_id,
+                        'contract_name': contract_name,
+                        'contract_version': contract_version,
+                        'contract_status': contract_status,
                         'sql_check': check,
-                        'sql': 'SELECT ' ~ column ~ ', COUNT(*) as count FROM ' ~ source_ref ~ ' GROUP BY ' ~ column ~ ' HAVING COUNT(*) > 1 LIMIT 10',
-                        'sql_count': 'SELECT CASE WHEN (' ~ check ~ ') THEN 0 ELSE 1 END'
+                        'sql': 'select ' ~ column ~ ', count(*) as count from ' ~ source_ref ~ ' group by ' ~ column ~ ' having count(*) > 1 limit 10',
+                        'sql_count': 'select case when ' ~ check ~ ' then 0 else 1 end'
                     }) %}
                 {% endif %}
             {# row count test (object-level) #}
             {% elif quality.rule == 'rowCount' %}
-                {% set total_query = 'SELECT COUNT(*) AS row_count FROM ' ~ source_ref %}
+                {% set total_query = 'select count(*) as row_count from ' ~ source_ref %}
                 {% if quality.mustBeBetween is defined and quality.mustBeBetween is iterable and quality.mustBeBetween|length == 2 %}
-                    {% set check = total_query ~ ' BETWEEN ' ~ quality.mustBeBetween[0] ~ ' AND ' ~ quality.mustBeBetween[1] %}
+                    {% set check = total_query ~ ' between ' ~ quality.mustBeBetween[0] ~ ' and ' ~ quality.mustBeBetween[1] %}
                 {% endif %}
                 {% if check is defined %}
                     {% do tests.append({
@@ -59,10 +69,15 @@
                         'table_name': table_name,
                         'column_name': '',
                         'rule_name': 'row_count',
-                        'description': quality.get('description', 'Ensures row count is between ' ~ quality.mustBeBetween[0] ~ ' and ' ~ quality.mustBeBetween[1]),
+                        'description': quality.get('description', 'ensures row count is between ' ~ quality.mustBeBetween[0] ~ ' and ' ~ quality.mustBeBetween[1]),
+                        'api_version': api_version,
+                        'contract_id': contract_id,
+                        'contract_name': contract_name,
+                        'contract_version': contract_version,
+                        'contract_status': contract_status,
                         'sql_check': check,
-                        'sql': total_query ~ ' LIMIT 10',
-                        'sql_count': 'SELECT CASE WHEN (' ~ check ~ ') THEN 0 ELSE 1 END'
+                        'sql': total_query ~ ' limit 10',
+                        'sql_count': 'select case when ' ~ check ~ ' then 0 else 1 end'
                     }) %}
                 {% endif %}
             {# value in set test #}
@@ -76,11 +91,16 @@
                         'table_name': table_name,
                         'column_name': column,
                         'rule_name': 'value_in_set',
-                        'description': quality.get('description', 'Ensures ' ~ column ~ ' contains only allowed values'),
+                        'description': quality.get('description', 'ensures ' ~ column ~ ' contains only allowed values'),
+                        'api_version': api_version,
+                        'contract_id': contract_id,
+                        'contract_name': contract_name,
+                        'contract_version': contract_version,
+                        'contract_status': contract_status,
                         'allowed_values': allowed_values,
-                        'sql_check': column ~ ' IS NULL OR ' ~ column ~ ' IN (' ~ values_str ~ ')',
-                        'sql': 'SELECT DISTINCT ' ~ column ~ ' FROM ' ~ source_ref ~ ' WHERE ' ~ column ~ ' IS NOT NULL AND ' ~ column ~ ' NOT IN (' ~ values_str ~ ') LIMIT 10',
-                        'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE ' ~ column ~ ' IS NOT NULL AND ' ~ column ~ ' NOT IN (' ~ values_str ~ ')'
+                        'sql_check': column ~ ' is null or ' ~ column ~ ' in (' ~ values_str ~ ')',
+                        'sql': 'select distinct ' ~ column ~ ' from ' ~ source_ref ~ ' where ' ~ column ~ ' is not null and ' ~ column ~ ' not in (' ~ values_str ~ ') limit 10',
+                        'sql_count': 'select count(*) from ' ~ source_ref ~ ' where ' ~ column ~ ' is not null and ' ~ column ~ ' not in (' ~ values_str ~ ')'
                     }) %}
                 {% endif %}
             {# conditional not null test #}
@@ -94,10 +114,15 @@
                         'column_name': column,
                         'rule_name': 'conditional_not_null',
                         'condition': condition,
-                        'description': quality.get('description', 'Ensures ' ~ column ~ ' is not null when ' ~ condition),
-                        'sql_check': 'NOT (' ~ condition ~ ') OR ' ~ column ~ ' IS NOT NULL',
-                        'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE ' ~ condition ~ ' AND ' ~ column ~ ' IS NULL LIMIT 10',
-                        'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE ' ~ condition ~ ' AND ' ~ column ~ ' IS NULL'
+                        'description': quality.get('description', 'ensures ' ~ column ~ ' is not null when ' ~ condition),
+                        'api_version': api_version,
+                        'contract_id': contract_id,
+                        'contract_name': contract_name,
+                        'contract_version': contract_version,
+                        'contract_status': contract_status,
+                        'sql_check': 'not (' ~ condition ~ ') or ' ~ column ~ ' is not null',
+                        'sql': 'select * from ' ~ source_ref ~ ' where ' ~ condition ~ ' and ' ~ column ~ ' is null limit 10',
+                        'sql_count': 'select count(*) from ' ~ source_ref ~ ' where ' ~ condition ~ ' and ' ~ column ~ ' is null'
                     }) %}
                 {% endif %}
             {# not null test #}
@@ -109,16 +134,36 @@
                         'table_name': table_name,
                         'column_name': column,
                         'rule_name': 'not_null',
-                        'description': quality.get('description', 'Ensures ' ~ column ~ ' is never null'),
-                        'sql_check': column ~ ' IS NOT NULL',
-                        'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE ' ~ column ~ ' IS NULL LIMIT 10',
-                        'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE ' ~ column ~ ' IS NULL'
+                        'description': quality.get('description', 'ensures ' ~ column ~ ' is never null'),
+                        'api_version': api_version,
+                        'contract_id': contract_id,
+                        'contract_name': contract_name,
+                        'contract_version': contract_version,
+                        'contract_status': contract_status,
+                        'sql_check': column ~ ' is not null',
+                        'sql': 'select * from ' ~ source_ref ~ ' where ' ~ column ~ ' is null limit 10',
+                        'sql_count': 'select count(*) from ' ~ source_ref ~ ' where ' ~ column ~ ' is null'
                     }) %}
                 {% endif %}
             {% endif %}
         {# handle text type #}
         {% elif quality.type == 'text' %}
             {% do log("text quality rule: " ~ quality.description, info=true) %}
+            {% do tests.append({
+                'test_type': 'Data Quality',
+                'table_name': table_name,
+                'column_name': '',
+                'rule_name': 'text_description',
+                'description': quality.get('description', 'text quality description'),
+                'api_version': api_version,
+                'contract_id': contract_id,
+                'contract_name': contract_name,
+                'contract_version': contract_version,
+                'contract_status': contract_status,
+                'sql_check': 'true',
+                'sql': 'select \'text quality check - no sql needed\' as description limit 1',
+                'sql_count': 'select 0 as failed_records'
+            }) %}
         {# handle sql type with operators #}
         {% elif quality.type == 'sql' %}
             {% set query = quality.query | replace('${object}', source_ref) | replace('${property}', quality.column | default('')) %}
@@ -135,9 +180,9 @@
             {% elif quality.mustBeLessOrEqualTo is defined %}
                 {% set check = query ~ ' <= ' ~ quality.mustBeLessOrEqualTo %}
             {% elif quality.mustBeBetween is defined and quality.mustBeBetween is iterable and quality.mustBeBetween|length == 2 %}
-                {% set check = query ~ ' BETWEEN ' ~ quality.mustBeBetween[0] ~ ' AND ' ~ quality.mustBeBetween[1] %}
+                {% set check = query ~ ' between ' ~ quality.mustBeBetween[0] ~ ' and ' ~ quality.mustBeBetween[1] %}
             {% elif quality.mustNotBeBetween is defined and quality.mustNotBeBetween is iterable and quality.mustNotBeBetween|length == 2 %}
-                {% set check = 'NOT (' ~ query ~ ' BETWEEN ' ~ quality.mustNotBeBetween[0] ~ ' AND ' ~ quality.mustNotBeBetween[1] ~ ')' %}
+                {% set check = 'not (' ~ query ~ ' between ' ~ quality.mustNotBeBetween[0] ~ ' and ' ~ quality.mustNotBeBetween[1] ~ ')' %}
             {% endif %}
             {% if check is defined %}
                 {% do tests.append({
@@ -146,14 +191,34 @@
                     'column_name': quality.column | default(''),
                     'rule_name': 'custom_sql_' ~ (quality.name | default('sql_check')),
                     'description': quality.get('description', 'custom sql quality check'),
+                    'api_version': api_version,
+                    'contract_id': contract_id,
+                    'contract_name': contract_name,
+                    'contract_version': contract_version,
+                    'contract_status': contract_status,
                     'sql_check': check,
-                    'sql': query ~ ' LIMIT 10',
-                    'sql_count': 'SELECT CASE WHEN (' ~ check ~ ') THEN 0 ELSE 1 END'
+                    'sql': query ~ ' limit 10',
+                    'sql_count': 'select case when (' ~ check ~ ') then 0 else 1 end'
                 }) %}
             {% endif %}
         {# handle custom type #}
         {% elif quality.type == 'custom' %}
             {% do log("custom quality rule (vendor-specific): " ~ quality.engine ~ ' - ' ~ quality.implementation, info=true) %}
+            {% do tests.append({
+                'test_type': 'Data Quality',
+                'table_name': table_name,
+                'column_name': quality.column | default(''),
+                'rule_name': 'custom_' ~ (quality.engine | default('vendor')) ~ '_' ~ (quality.name | default('check')),
+                'description': quality.get('description', 'vendor-specific quality check: ' ~ quality.engine),
+                'api_version': api_version,
+                'contract_id': contract_id,
+                'contract_name': contract_name,
+                'contract_version': contract_version,
+                'contract_status': contract_status,
+                'sql_check': 'true',
+                'sql': 'select \'custom quality check - no sql needed\' as description limit 1',
+                'sql_count': 'select 0 as failed_records'
+            }) %}
         {% endif %}
         
         {# handle scheduling info #}
