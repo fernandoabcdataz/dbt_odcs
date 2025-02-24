@@ -3,33 +3,49 @@
     
     {% if all_tests|length == 0 %}
         SELECT 
-            NULL as test_id,
-            NULL as test_type,
-            NULL as table_name,
-            NULL as column_name,
-            NULL as rule_name,
-            NULL as description,
-            NULL as sql_check,
-            NULL as sql,
-            NULL as sql_count,
-            NULL as failed_records,
-            NULL as test_status,
-            NULL as execution_time
-        WHERE 1=0
+            'no_tests' as test_id,
+            'No Tests' as test_type,
+            'none' as table_name,
+            'none' as column_name,
+            'none' as rule_name,
+            'No tests were generated' as description,
+            'none' as sql_check,
+            'none' as sql,
+            'none' as sql_count,
+            0 as failed_records,
+            'SKIPPED' as test_status,
+            CURRENT_TIMESTAMP() as execution_time
     {% else %}
         WITH test_results AS (
             {% for test in all_tests %}
                 SELECT
-                    {{ test.test_type ~ '_' ~ test.rule_name ~ '_' ~ test.column_name | replace("'", "") }} AS test_id,
-                    {{ test.test_type }} AS test_type,
-                    {{ test.table_name }} AS table_name,
-                    {{ test.column_name }} AS column_name,
-                    {{ test.rule_name }} AS rule_name,
-                    {{ test.description | replace("'", "''") }} AS description,
-                    {{ test.sql_check | replace("'", "''") }} AS sql_check,
-                    {{ test.sql | replace("'", "''") }} AS sql,
-                    {{ test.sql_count | replace("'", "''") }} AS sql_count,
+                    CONCAT('{{ test.test_type }}', '_', '{{ test.rule_name }}', '_', '{{ test.column_name }}') AS test_id,
+                    '{{ test.test_type }}' AS test_type,
+                    '{{ test.table_name }}' AS table_name,
+                    '{{ test.column_name }}' AS column_name,
+                    '{{ test.rule_name }}' AS rule_name,
+                    {% if test.description is defined %}
+                    """{{ test.description }}""" AS description,
+                    {% else %}
+                    'No description' AS description,
+                    {% endif %}
+                    {% if test.sql_check is defined %}
+                    """{{ test.sql_check }}""" AS sql_check,
+                    {% else %}
+                    'No SQL check' AS sql_check,
+                    {% endif %}
+                    {% if test.sql is defined %}
+                    """{{ test.sql }}""" AS sql,
+                    {% else %}
+                    'No SQL' AS sql,
+                    {% endif %}
+                    {% if test.sql_count is defined %}
+                    """{{ test.sql_count }}""" AS sql_count,
                     ({{ test.sql_count }}) AS failed_records
+                    {% else %}
+                    'No SQL count' AS sql_count,
+                    0 AS failed_records
+                    {% endif %}
                     {% if not loop.last %} UNION ALL {% endif %}
             {% endfor %}
         )
