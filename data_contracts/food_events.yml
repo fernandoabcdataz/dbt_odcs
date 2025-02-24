@@ -1,7 +1,7 @@
 # data_contracts/food_events.yml
 schema:
   - name: tbl
-    physicalName: food_events
+    physicalName: {{ source('food_events') }}
     properties:
       - name: report_number
         logicalType: string

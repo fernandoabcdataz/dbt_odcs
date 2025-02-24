@@ -1,4 +1,5 @@
-{{ config(materialized='table') }}
+-- models/food_events.sql
+{{ config(materialized='incremental') }}
 
 {% set contract_yaml %}
 schema:
