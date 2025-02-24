@@ -1,4 +1,4 @@
--- dbt_odcs/models/food_events_test_results.sql
+-- dbt_odcs/models/odcs/food_events_test_results.sql
 {{ config(materialized='table') }}
 
 {% set contract_yaml %}
@@ -106,11 +106,6 @@ slaProperties:
     element: food_events.date_created
     description: Ensures data is refreshed daily, with date_created no older than 1 day
 {% endset %}
-
-{# 
--- For file-based approach, uncomment the following:
--- {{ process_data_contract('fda_food', 'food_events', contract_path=var('contracts_path') ~ '/food_events.yml') }}
-#}
 
 {# for embedded YAML approach: #}
 {{ process_data_contract('fda_food', 'food_events', contract_yaml=contract_yaml) }}

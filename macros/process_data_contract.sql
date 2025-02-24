@@ -2,13 +2,7 @@
 {% macro process_data_contract(source_name, table_name, contract_yaml=none, contract_path=none) %}
     
     {# parse the contract from YAML string or file #}
-    {% if contract_yaml %}
-        {% set contract = fromyaml(contract_yaml) %}
-    {% elif contract_path %}
-        {% set contract = load_contract(contract_path) %}
-    {% else %}
-        {% set contract = {} %}
-    {% endif %}
+    {% set contract = fromyaml(contract_yaml) %}
     
     {# generate tests for each category #}
     {% set schema_tests = process_schema_tests(source_name, table_name, contract) %}
