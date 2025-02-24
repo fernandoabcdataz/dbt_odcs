@@ -1,3 +1,4 @@
+-- dbt_odcs/models/file_based_test_results.sql
 {{ config(materialized='table') }}
 
 {# this model demonstrates the file-based approach using the vars configuration #}

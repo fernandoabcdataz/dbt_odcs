@@ -1,4 +1,4 @@
-# models/sources.yml
+# dbt_odcs/models/sources.yml
 version: 2
 sources:
   - name: fda_food

@@ -1,4 +1,4 @@
-# data_contracts/food_events.yml
+# dbt_odcs/data_contracts/food_events.yml
 apiVersion: v3.0.1
 kind: DataContract
 

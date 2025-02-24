@@ -1,4 +1,4 @@
--- models/food_events_test_results.sql
+-- dbt_odcs/models/food_events_test_results.sql
 {{ config(materialized='table') }}
 
 {% set contract_yaml %}

@@ -1,3 +1,4 @@
+-- dbt_odcs/macros/process_data_contract.sql
 {% macro process_data_contract(source_name, table_name, contract_yaml=none, contract_path=none) %}
     
     {# parse the contract from YAML string or file #}

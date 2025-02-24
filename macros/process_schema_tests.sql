@@ -1,13 +1,13 @@
-
+-- dbt_odcs/macros/process_schema_tests.sql
 {% macro process_schema_tests(source_name, table_name, contract) %}
     {% set source_ref = source(source_name, table_name) %}
     {% set tests = [] %}
     
-    {# Extract schema properties from contract #}
+    {# extract schema properties from contract #}
     {% set schema_obj = contract.schema[0] %}
     {% set properties = schema_obj.properties %}
     
-    {# Generate schema tests #}
+    {# generate schema tests #}
     {% for prop in properties %}
         {# Data type test #}
         {% set type_check = {
@@ -29,7 +29,7 @@
             'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ type_check ~ ')'
         }) %}
         
-        {# Required/Not Null test #}
+        {# required/not null test #}
         {% if prop.get('required', false) %}
             {% do tests.append({
                 'test_type': 'Schema',
@@ -43,7 +43,7 @@
             }) %}
         {% endif %}
         
-        {# Primary Key test #}
+        {# primary key test #}
         {% if prop.get('primaryKey', false) %}
             {% do tests.append({
                 'test_type': 'Schema',

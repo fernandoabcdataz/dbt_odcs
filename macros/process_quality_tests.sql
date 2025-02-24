@@ -1,3 +1,4 @@
+-- dbt_odcs/macros/process_quality_tests.sql
 {% macro process_quality_tests(source_name, table_name, contract) %}
     {% set source_ref = source(source_name, table_name) %}
     {% set tests = [] %}
@@ -26,7 +27,7 @@
                 {% endif %}
             {% endif %}
             
-            {# Value In Set test #}
+            {# value in set test #}
             {% if quality.rule == 'valueInSet' %}
                 {% set column = quality.get('column', '') %}
                 {% set allowed_values = quality.get('allowedValues', []) %}
@@ -46,7 +47,7 @@
                 {% endif %}
             {% endif %}
             
-            {# Conditional Not Null test #}
+            {# conditional not null test #}
             {% if quality.rule == 'conditionalNotNull' %}
                 {% set column = quality.get('column', '') %}
                 {% set condition = quality.get('condition', '') %}
@@ -65,7 +66,7 @@
                 {% endif %}
             {% endif %}
             
-            {# Not Null test (could be handled in schema tests, but included here for completeness) #}
+            {# not null test (could be handled in schema tests, but included here for completeness) #}
             {% if quality.rule == 'notNull' %}
                 {% set column = quality.get('column', '') %}
                 {% if column %}

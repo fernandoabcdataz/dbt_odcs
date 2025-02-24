@@ -1,8 +1,9 @@
+-- dbt_odcs/macros/load_contract.sql
 {% macro load_contract(contract_path) %}
-    {# For debugging only - print the path #}
-    {% do log("Attempting to load: " ~ contract_path, info=true) %}
+    {# for debugging only - print the path #}
+    {% do log("attempting to load: " ~ contract_path, info=true) %}
     
-    {# Return a basic schema structure to prevent errors #}
+    {# return a basic schema structure to prevent errors #}
     {% do return({
         "schema": [
             {
