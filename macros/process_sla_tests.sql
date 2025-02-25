@@ -3,30 +3,30 @@
     {% set source_ref = source(source_name, table_name) %}
     {% set tests = [] %}
     
-    {# Extract SLA properties from contract #}
+    {# extract sla properties from contract #}
     {% if contract is defined and contract is mapping %}
         {% set sla_properties = contract.get('slaProperties', []) %}
     {% else %}
         {% set sla_properties = [] %}
     {% endif %}
     
-    {# Generate SLA tests #}
+    {# generate sla tests #}
     {% for sla in sla_properties %}
-        {# Frequency test (freshness) #}
+        {# frequency test (freshness) #}
         {% if sla.property == 'frequency' %}
             {% set element_parts = sla.element.split('.') %}
             {% set column_name = element_parts[1] if element_parts|length > 1 else element_parts[0] %}
             {% set interval_value = sla.value %}
             {% set interval_unit = sla.unit | default('d') %}
             
-            {# Convert unit to days if needed #}
+            {# convert unit to days if needed #}
             {% set days = interval_value %}
             {% if interval_unit == 'w' or interval_unit == 'week' or interval_unit == 'weeks' %}
                 {% set days = interval_value * 7 %}
             {% elif interval_unit == 'm' or interval_unit == 'month' or interval_unit == 'months' %}
-                {% set days = interval_value * 30 %}  {# Approximate #}
+                {% set days = interval_value * 30 %}  {# approximate #}
             {% elif interval_unit == 'y' or interval_unit == 'year' or interval_unit == 'years' %}
-                {% set days = interval_value * 365 %}  {# Approximate #}
+                {% set days = interval_value * 365 %}  {# approximate #}
             {% endif %}
             
             {% set freshness_check = 'DATE_DIFF(CURRENT_DATE(), MAX(CAST(' ~ column_name ~ ' AS DATE)), DAY) <= ' ~ days %}
