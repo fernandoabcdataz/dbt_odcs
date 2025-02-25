@@ -1,4 +1,5 @@
 -- dbt_odcs/macros/process_quality_tests.sql
+
 {% macro process_quality_tests(source_name, table_name, contract, api_version, contract_id, contract_name, contract_version, contract_status) %}
     {% set source_ref = source(source_name, table_name) %}
     {% set tests = [] %}
@@ -54,14 +55,15 @@
                         'contract_status': contract_status,
                         'sql_check': check,
                         'sql': 'select ' ~ column ~ ', count(*) as count from ' ~ source_ref ~ ' group by ' ~ column ~ ' having count(*) > 1 limit 10',
-                        'sql_count': 'select case when ' ~ check ~ ' then 0 else 1 end'
+                        'sql_count': 'select (case when ' ~ check ~ ' then 0 else 1 end) as failed_records'
                     }) %}
                 {% endif %}
             {# row count test (object-level) #}
             {% elif quality.rule == 'rowCount' %}
                 {% set total_query = 'select count(*) as row_count from ' ~ source_ref %}
                 {% if quality.mustBeBetween is defined and quality.mustBeBetween is iterable and quality.mustBeBetween|length == 2 %}
-                    {% set check = total_query ~ ' between ' ~ quality.mustBeBetween[0] ~ ' and ' ~ quality.mustBeBetween[1] %}
+                    {% set min_value, max_value = quality.mustBeBetween %}
+                    {% set check = '(select row_count from (' ~ total_query ~ ')) between ' ~ min_value ~ ' and ' ~ max_value %}
                 {% endif %}
                 {% if check is defined %}
                     {% do tests.append({
@@ -77,7 +79,7 @@
                         'contract_status': contract_status,
                         'sql_check': check,
                         'sql': total_query ~ ' limit 10',
-                        'sql_count': 'select case when ' ~ check ~ ' then 0 else 1 end'
+                        'sql_count': 'select (case when ' ~ check ~ ' then 0 else 1 end) as failed_records'
                     }) %}
                 {% endif %}
             {# value in set test #}
@@ -167,22 +169,24 @@
         {# handle sql type with operators #}
         {% elif quality.type == 'sql' %}
             {% set query = quality.query | replace('${object}', source_ref) | replace('${property}', quality.column | default('')) %}
+            {% set count_query = 'select ' ~ query %}
+            {% set count_result = '(select ' ~ query ~ ' limit 1)' %}  {# Ensure single value by limiting to 1 row #}
             {% if quality.mustBe is defined %}
-                {% set check = query ~ ' = ' ~ quality.mustBe %}
+                {% set check = count_result ~ ' = ' ~ quality.mustBe %}
             {% elif quality.mustNotBe is defined %}
-                {% set check = query ~ ' != ' ~ quality.mustNotBe %}
+                {% set check = count_result ~ ' != ' ~ quality.mustNotBe %}
             {% elif quality.mustBeGreaterThan is defined %}
-                {% set check = query ~ ' > ' ~ quality.mustBeGreaterThan %}
+                {% set check = count_result ~ ' > ' ~ quality.mustBeGreaterThan %}
             {% elif quality.mustBeGreaterOrEqualTo is defined %}
-                {% set check = query ~ ' >= ' ~ quality.mustBeGreaterOrEqualTo %}
+                {% set check = count_result ~ ' >= ' ~ quality.mustBeGreaterOrEqualTo %}
             {% elif quality.mustBeLessThan is defined %}
-                {% set check = query ~ ' < ' ~ quality.mustBeLessThan %}
+                {% set check = count_result ~ ' < ' ~ quality.mustBeLessThan %}
             {% elif quality.mustBeLessOrEqualTo is defined %}
-                {% set check = query ~ ' <= ' ~ quality.mustBeLessOrEqualTo %}
+                {% set check = count_result ~ ' <= ' ~ quality.mustBeLessOrEqualTo %}
             {% elif quality.mustBeBetween is defined and quality.mustBeBetween is iterable and quality.mustBeBetween|length == 2 %}
-                {% set check = query ~ ' between ' ~ quality.mustBeBetween[0] ~ ' and ' ~ quality.mustBeBetween[1] %}
+                {% set check = count_result ~ ' between ' ~ quality.mustBeBetween[0] ~ ' and ' ~ quality.mustBeBetween[1] %}
             {% elif quality.mustNotBeBetween is defined and quality.mustNotBeBetween is iterable and quality.mustNotBeBetween|length == 2 %}
-                {% set check = 'not (' ~ query ~ ' between ' ~ quality.mustNotBeBetween[0] ~ ' and ' ~ quality.mustNotBeBetween[1] ~ ')' %}
+                {% set check = 'not (' ~ count_result ~ ' between ' ~ quality.mustNotBeBetween[0] ~ ' and ' ~ quality.mustNotBeBetween[1] ~ ')' %}
             {% endif %}
             {% if check is defined %}
                 {% do tests.append({
@@ -198,7 +202,7 @@
                     'contract_status': contract_status,
                     'sql_check': check,
                     'sql': query ~ ' limit 10',
-                    'sql_count': 'select case when (' ~ check ~ ') then 0 else 1 end'
+                    'sql_count': 'select (case when ' ~ check ~ ' then 0 else 1 end) as failed_records'
                 }) %}
             {% endif %}
         {# handle custom type #}

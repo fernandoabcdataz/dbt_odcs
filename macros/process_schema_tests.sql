@@ -26,7 +26,7 @@
                 'table_name': table_name,
                 'column_name': prop.name,
                 'rule_name': 'array_structure',
-                'description': 'Checks if column ' ~ prop.name ~ ' is a valid array with ' ~ items_type ~ ' items',
+                'description': 'checks if column ' ~ prop.name ~ ' is a valid array with ' ~ items_type ~ ' items',
                 'sql_check': array_check,
                 'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE NOT (' ~ array_check ~ ') LIMIT 10',
                 'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ array_check ~ ')'
@@ -46,7 +46,7 @@
                 'table_name': table_name,
                 'column_name': prop.name,
                 'rule_name': 'data_type',
-                'description': 'Checks if column ' ~ prop.name ~ ' has the correct data type (' ~ prop.logicalType ~ ')',
+                'description': 'checks if column ' ~ prop.name ~ ' has the correct data type (' ~ prop.logicalType ~ ')',
                 'expected_type': prop.logicalType,
                 'physical_type': prop.physicalType,
                 'sql_check': type_check,
@@ -61,7 +61,7 @@
                     'table_name': table_name,
                     'column_name': prop.name,
                     'rule_name': 'not_null',
-                    'description': 'Checks if required column ' ~ prop.name ~ ' contains null values',
+                    'description': 'checks if required column ' ~ prop.name ~ ' contains null values',
                     'sql_check': prop.name ~ ' IS NOT NULL',
                     'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NULL LIMIT 10',
                     'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NULL'
@@ -75,7 +75,7 @@
                     'table_name': table_name,
                     'column_name': prop.name,
                     'rule_name': 'unique',
-                    'description': 'Checks if column ' ~ prop.name ~ ' contains unique values',
+                    'description': 'checks if column ' ~ prop.name ~ ' contains unique values',
                     'sql_check': 'COUNT(DISTINCT ' ~ prop.name ~ ') = COUNT(' ~ prop.name ~ ')',
                     'sql': 'SELECT ' ~ prop.name ~ ', COUNT(*) as count FROM ' ~ source_ref ~ ' GROUP BY ' ~ prop.name ~ ' HAVING COUNT(*) > 1 LIMIT 10',
                     'sql_count': 'SELECT COUNT(*) FROM (SELECT ' ~ prop.name ~ ', COUNT(*) FROM ' ~ source_ref ~ ' GROUP BY ' ~ prop.name ~ ' HAVING COUNT(*) > 1)'
@@ -89,7 +89,7 @@
                     'table_name': table_name,
                     'column_name': prop.name,
                     'rule_name': 'unique',
-                    'description': 'Checks if primary key column ' ~ prop.name ~ ' contains duplicate values',
+                    'description': 'checks if primary key column ' ~ prop.name ~ ' contains duplicate values',
                     'sql_check': 'COUNT(DISTINCT ' ~ prop.name ~ ') = COUNT(' ~ prop.name ~ ')',
                     'sql': 'SELECT ' ~ prop.name ~ ', COUNT(*) as count FROM ' ~ source_ref ~ ' GROUP BY ' ~ prop.name ~ ' HAVING COUNT(*) > 1 LIMIT 10',
                     'sql_count': 'SELECT COUNT(*) FROM (SELECT ' ~ prop.name ~ ', COUNT(*) FROM ' ~ source_ref ~ ' GROUP BY ' ~ prop.name ~ ' HAVING COUNT(*) > 1)'
@@ -105,7 +105,7 @@
                         'table_name': table_name,
                         'column_name': prop.name,
                         'rule_name': 'maximum_value',
-                        'description': 'Checks if column ' ~ prop.name ~ ' is less than or equal to ' ~ prop.logicalTypeOptions.maximum,
+                        'description': 'checks if column ' ~ prop.name ~ ' is less than or equal to ' ~ prop.logicalTypeOptions.maximum,
                         'sql_check': max_check,
                         'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE NOT (' ~ max_check ~ ') LIMIT 10',
                         'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ max_check ~ ')'
@@ -118,7 +118,7 @@
                         'table_name': table_name,
                         'column_name': prop.name,
                         'rule_name': 'minimum_value',
-                        'description': 'Checks if column ' ~ prop.name ~ ' is greater than or equal to ' ~ prop.logicalTypeOptions.minimum,
+                        'description': 'checks if column ' ~ prop.name ~ ' is greater than or equal to ' ~ prop.logicalTypeOptions.minimum,
                         'sql_check': min_check,
                         'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE NOT (' ~ min_check ~ ') LIMIT 10',
                         'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ min_check ~ ')'
@@ -131,7 +131,7 @@
                         'table_name': table_name,
                         'column_name': prop.name,
                         'rule_name': 'pattern_match',
-                        'description': 'Checks if column ' ~ prop.name ~ ' matches pattern ' ~ prop.logicalTypeOptions.pattern,
+                        'description': 'checks if column ' ~ prop.name ~ ' matches pattern ' ~ prop.logicalTypeOptions.pattern,
                         'sql_check': prop.name ~ ' IS NULL OR ' ~ pattern_check,
                         'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT (' ~ pattern_check ~ ') LIMIT 10',
                         'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT (' ~ pattern_check ~ ')'
@@ -144,7 +144,7 @@
                         'table_name': table_name,
                         'column_name': prop.name,
                         'rule_name': 'format_check',
-                        'description': 'Checks if column ' ~ prop.name ~ ' matches format ' ~ prop.logicalTypeOptions.format,
+                        'description': 'checks if column ' ~ prop.name ~ ' matches format ' ~ prop.logicalTypeOptions.format,
                         'sql_check': format_check,
                         'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE NOT (' ~ format_check ~ ') LIMIT 10',
                         'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ format_check ~ ')'
