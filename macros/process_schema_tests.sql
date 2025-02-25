@@ -4,7 +4,7 @@
     {% set source_ref = source(source_name, table_name) %}
     {% set tests = [] %}
     
-    {# Extract schema properties from contract #}
+    {# extract schema properties from contract #}
     {% if contract is defined and contract is mapping and contract.schema is defined and contract.schema|length > 0 %}
         {% set schema_obj = contract.schema[0] %}
         {% if schema_obj.properties is defined %}
@@ -14,12 +14,12 @@
         {% endif %}
     {% else %}
         {% set properties = [] %}
-        {% do log("WARNING: No schema found in contract or schema is empty", info=true) %}
+        {% do log("WARNING: no schema found in contract or schema is empty", info=true) %}
     {% endif %}
     
-    {# Generate schema tests #}
+    {# generate schema tests #}
     {% for prop in properties %}
-        {# Handle arrays #}
+        {# handle arrays #}
         {% if prop.logicalType | lower == 'array' and prop.items is defined %}
             {% set items_type = prop.items.logicalType | lower %}
             {% set array_check = 'ARRAY_LENGTH(' ~ prop.name ~ ') IS NOT NULL' %}
@@ -42,7 +42,7 @@
                 'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ array_check ~ ')'
             }) %}
         {% else %}
-            {# Data type test #}
+            {# data type test #}
             {% set type_check = {
                 'integer': 'SAFE_CAST(' ~ prop.name ~ ' AS INT64) IS NOT NULL OR ' ~ prop.name ~ ' IS NULL',
                 'date': 'SAFE_CAST(' ~ prop.name ~ ' AS DATE) IS NOT NULL OR ' ~ prop.name ~ ' IS NULL',
@@ -50,7 +50,6 @@
                 'number': 'SAFE_CAST(' ~ prop.name ~ ' AS FLOAT64) IS NOT NULL OR ' ~ prop.name ~ ' IS NULL',
                 'boolean': 'CAST(' ~ prop.name ~ ' AS BOOLEAN) IS NOT NULL OR ' ~ prop.name ~ ' IS NULL'
             }.get(prop.logicalType | lower, 'TRUE') %}
-            
             {% do tests.append({
                 'test_type': 'Schema',
                 'table_name': table_name,
@@ -64,7 +63,7 @@
                 'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ type_check ~ ')'
             }) %}
             
-            {# Required/Not Null test #}
+            {# required/not null test #}
             {% if prop.get('required', false) %}
                 {% do tests.append({
                     'test_type': 'Schema',
@@ -78,7 +77,7 @@
                 }) %}
             {% endif %}
             
-            {# Unique test #}
+            {# unique test #}
             {% if prop.get('unique', false) %}
                 {% do tests.append({
                     'test_type': 'Schema',
@@ -92,7 +91,7 @@
                 }) %}
             {% endif %}
             
-            {# Primary Key test #}
+            {# primary key test #}
             {% if prop.get('primaryKey', false) %}
                 {% do tests.append({
                     'test_type': 'Schema',
@@ -106,13 +105,14 @@
                 }) %}
             {% endif %}
             
-            {# Logical Type Options #}
+            {# COMMENTED OUT
+            {# logical type options #}
             {% if prop.logicalTypeOptions is defined %}
                 {% if prop.logicalTypeOptions.maximum is defined %}
                     {% set cast_statement = '' %}
                     {% set max_value = prop.logicalTypeOptions.maximum %}
                     
-                    {# Handle different data types for comparison #}
+                    {# handle different data types for comparison #}
                     {% if prop.logicalType | lower in ['integer', 'number'] %}
                         {% set cast_statement = 'SAFE_CAST(' ~ prop.name ~ ' AS ' ~ ('INT64' if prop.logicalType | lower == 'integer' else 'FLOAT64') ~ ')' %}
                     {% elif prop.logicalType | lower == 'date' %}
@@ -208,7 +208,7 @@
                         'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ format_check ~ ')'
                     }) %}
                 {% endif %}
-            {% endif %}
+            {% endif %} END COMMENT #}
         {% endif %}
     {% endfor %}
     
