@@ -20,7 +20,7 @@
         WITH test_results AS (
             {% for test in all_tests %}
                 SELECT
-                    CONCAT('{{ test.test_type }}', '_', '{{ test.rule_name }}', '_', '{{ test.column_name }}') AS test_id,
+                    CONCAT('{{ test.test_type }}', ': ', '{{ test.rule_name }}', '_', '{{ test.column_name }}') AS test_id,
                     '{{ test.test_type }}' AS test_type,
                     '{{ test.table_name }}' AS table_name,
                     '{{ test.column_name }}' AS column_name,
