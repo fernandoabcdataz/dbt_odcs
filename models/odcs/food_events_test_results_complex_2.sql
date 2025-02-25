@@ -1,4 +1,4 @@
--- dbt_odcs/models/odcs/food_events_test_results_complex.sql
+-- dbt_odcs/models/odcs/food_events_test_results_complex_2.sql
 
 {{ config(materialized='table') }}
 
@@ -14,9 +14,9 @@ domain: health
 dataProduct: adverse_events
 tenant: FDA
 description:
-  purpose: Tracks adverse events related to food and dietary products for regulatory and safety analysis.
-  limitations: Data may contain duplicates or missing values for historical records.
-  usage: Use for regulatory reporting, consumer safety analysis, and product monitoring.
+  purpose: tracks adverse events related to food and dietary products for regulatory and safety analysis.
+  limitations: data may contain duplicates or missing values for historical records.
+  usage: use for regulatory reporting, consumer safety analysis, and product monitoring.
 tags: ['health', 'safety', 'regulation']
 
 schema:
@@ -24,12 +24,12 @@ schema:
     logicalType: object
     physicalName: food_events
     physicalType: table
-    description: Provides detailed adverse event data for food and dietary products.
+    description: provides detailed adverse event data for food and dietary products.
     authoritativeDefinitions:
       - url: https://www.fda.gov/food/adverse-event-reporting
         type: businessDefinition
     tags: ['critical', 'public']
-    dataGranularityDescription: Aggregated by report number and date created.
+    dataGranularityDescription: aggregated by report number and date created.
     properties:
       - name: report_number
         logicalType: string
@@ -46,6 +46,17 @@ schema:
           minLength: 6
           maxLength: 15
 
+      - name: reactions
+        logicalType: string
+        physicalType: string
+        required: false
+        description: descriptions of adverse reactions experienced, often multiple conditions in quotes and commas.
+        tags: ['sensitive', 'medical']
+        classification: restricted
+        logicalTypeOptions:
+          maxLength: 2000
+          pattern: "^\"?[A-Za-z0-9\\s,/]+\"?(, ?\"?[A-Za-z0-9\\s,/]+\"?)*$"
+
       - name: outcomes
         logicalType: string
         physicalType: string
@@ -55,6 +66,27 @@ schema:
         classification: public
         logicalTypeOptions:
           pattern: "^(Hospitalization|Death|Disability|Other Serious or Important Medical Event|Visited Emergency Room|Visited a Health Care Provider|Other Outcome|Life Threatening|Required Intervention)*$"
+
+      - name: products_brand_name
+        logicalType: string
+        physicalType: string
+        required: false
+        description: brand name of the product involved in the adverse event.
+        tags: ['product']
+        classification: public
+        logicalTypeOptions:
+          maxLength: 100
+          pattern: "^[A-Za-z0-9\\s\\(\\)-]+$"
+
+      - name: products_industry_code
+        logicalType: integer
+        physicalType: integer
+        required: false
+        description: industry code of the product, typically a numeric code (e.g., 54 for vitamins/minerals).
+        logicalTypeOptions:
+          minimum: 1
+          maximum: 99
+          multipleOf: 1
 
       - name: products_role
         logicalType: string
@@ -75,6 +107,30 @@ schema:
         classification: public
         logicalTypeOptions:
           pattern: "^[A-Za-z/]+$"
+
+      - name: date_created
+        logicalType: date
+        physicalType: date
+        required: true
+        description: date the report was created, typically in YYYY-MM-DD format.
+        tags: ['timestamp']
+        classification: public
+        logicalTypeOptions:
+          format: "yyyy-MM-dd"
+          minimum: "2005-01-01"
+          maximum: "2025-12-31"
+
+      - name: date_started
+        logicalType: date
+        physicalType: date
+        required: false
+        description: date the adverse event started, if known, in YYYY-MM-DD format.
+        tags: ['timestamp']
+        classification: public
+        logicalTypeOptions:
+          format: "yyyy-MM-dd"
+          minimum: "1900-01-01"
+          maximum: "2025-12-31"
 
       - name: consumer_gender
         logicalType: string
@@ -105,6 +161,22 @@ schema:
         classification: restricted
         logicalTypeOptions:
           pattern: "^(years|months)?$"
+
+      - name: related_products
+        logicalType: array
+        physicalType: array<string>
+        required: false
+        description: list of related products involved in the event, if multiple products are involved.
+        items:
+          logicalType: string
+          physicalType: string
+          logicalTypeOptions:
+            pattern: "^[A-Za-z0-9\\s\\(\\)-]+$"
+            maxLength: 100
+        logicalTypeOptions:
+          maxItems: 5
+          minItems: 1
+          uniqueItems: true
 
 quality:
   - type: library
@@ -164,6 +236,14 @@ quality:
   - type: text
     description: the report_number should be verified against FDA regulatory standards for uniqueness and format.
 
+  - type: sql
+    query: |
+      SELECT COUNT(*) FROM ${object} WHERE ${property} > 0 AND ${property} < 150
+    column: consumer_age
+    mustBeLessThan: 900
+    name: age_range_limit
+    description: ensures the count of consumer ages between 0 and 150 is less than 900
+
   - type: custom
     engine: greatExpectations
     implementation: |
@@ -187,6 +267,12 @@ slaProperties:
     element: food_events.date_created
     description: ensures data is refreshed daily, with date_created no older than 1 day
 
+  - property: latency
+    value: 4
+    unit: h
+    element: food_events.date_created
+    description: ensures data latency for date_created is within 4 hours
+
   - property: generalAvailability
     value: 2025-01-01T00:00:00Z
     description: ensures data is generally available starting January 1, 2025
@@ -198,6 +284,18 @@ slaProperties:
   - property: endOfLife
     value: 2040-12-31T23:59:59Z
     description: ensures the data product lifecycle ends on December 31, 2040
+
+  - property: retention
+    value: 7
+    unit: y
+    element: food_events.date_created
+    description: ensures data retention for date_created is at least 7 years
+
+  - property: timeOfAvailability
+    value: "08:00-18:00"
+    element: food_events.date_created
+    driver: regulatory
+    description: ensures data is available between 8 AM and 6 PM daily for regulatory purposes
 
 support:
   - channel: fda_adverse_events

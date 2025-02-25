@@ -1,4 +1,5 @@
 -- dbt_odcs/macros/combine_test_results.sql
+
 {% macro combine_test_results(schema_tests, quality_tests, sla_tests) %}
     {% set all_tests = schema_tests + quality_tests + sla_tests %}
     
