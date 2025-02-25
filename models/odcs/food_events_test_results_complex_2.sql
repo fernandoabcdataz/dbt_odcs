@@ -162,22 +162,6 @@ schema:
         logicalTypeOptions:
           pattern: "^(years|months)?$"
 
-      - name: related_products
-        logicalType: array
-        physicalType: array<string>
-        required: false
-        description: list of related products involved in the event, if multiple products are involved.
-        items:
-          logicalType: string
-          physicalType: string
-          logicalTypeOptions:
-            pattern: "^[A-Za-z0-9\\s\\(\\)-]+$"
-            maxLength: 100
-        logicalTypeOptions:
-          maxItems: 5
-          minItems: 1
-          uniqueItems: true
-
 quality:
   - type: library
     rule: uniqueCombination

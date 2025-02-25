@@ -4,13 +4,22 @@
     {% set source_ref = source(source_name, table_name) %}
     {% set tests = [] %}
     
-    {# extract schema properties from contract #}
-    {% set schema_obj = contract.schema[0] %}
-    {% set properties = schema_obj.properties %}
+    {# Extract schema properties from contract #}
+    {% if contract is defined and contract is mapping and contract.schema is defined and contract.schema|length > 0 %}
+        {% set schema_obj = contract.schema[0] %}
+        {% if schema_obj.properties is defined %}
+            {% set properties = schema_obj.properties %}
+        {% else %}
+            {% set properties = [] %}
+        {% endif %}
+    {% else %}
+        {% set properties = [] %}
+        {% do log("WARNING: No schema found in contract or schema is empty", info=true) %}
+    {% endif %}
     
-    {# generate schema tests #}
+    {# Generate schema tests #}
     {% for prop in properties %}
-        {# handle arrays #}
+        {# Handle arrays #}
         {% if prop.logicalType | lower == 'array' and prop.items is defined %}
             {% set items_type = prop.items.logicalType | lower %}
             {% set array_check = 'ARRAY_LENGTH(' ~ prop.name ~ ') IS NOT NULL' %}
@@ -33,7 +42,7 @@
                 'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ array_check ~ ')'
             }) %}
         {% else %}
-            {# data type test #}
+            {# Data type test #}
             {% set type_check = {
                 'integer': 'SAFE_CAST(' ~ prop.name ~ ' AS INT64) IS NOT NULL OR ' ~ prop.name ~ ' IS NULL',
                 'date': 'SAFE_CAST(' ~ prop.name ~ ' AS DATE) IS NOT NULL OR ' ~ prop.name ~ ' IS NULL',
@@ -55,7 +64,7 @@
                 'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ type_check ~ ')'
             }) %}
             
-            {# required/not null test #}
+            {# Required/Not Null test #}
             {% if prop.get('required', false) %}
                 {% do tests.append({
                     'test_type': 'Schema',
@@ -69,7 +78,7 @@
                 }) %}
             {% endif %}
             
-            {# unique test #}
+            {# Unique test #}
             {% if prop.get('unique', false) %}
                 {% do tests.append({
                     'test_type': 'Schema',
@@ -83,7 +92,7 @@
                 }) %}
             {% endif %}
             
-            {# primary key test #}
+            {# Primary Key test #}
             {% if prop.get('primaryKey', false) %}
                 {% do tests.append({
                     'test_type': 'Schema',
@@ -97,10 +106,27 @@
                 }) %}
             {% endif %}
             
-            {# logical type options #}
+            {# Logical Type Options #}
             {% if prop.logicalTypeOptions is defined %}
                 {% if prop.logicalTypeOptions.maximum is defined %}
-                    {% set max_check = prop.name ~ ' <= ' ~ prop.logicalTypeOptions.maximum %}
+                    {% set cast_statement = '' %}
+                    {% set max_value = prop.logicalTypeOptions.maximum %}
+                    
+                    {# Handle different data types for comparison #}
+                    {% if prop.logicalType | lower in ['integer', 'number'] %}
+                        {% set cast_statement = 'SAFE_CAST(' ~ prop.name ~ ' AS ' ~ ('INT64' if prop.logicalType | lower == 'integer' else 'FLOAT64') ~ ')' %}
+                    {% elif prop.logicalType | lower == 'date' %}
+                        {# Format date literal properly with quotes #}
+                        {% set max_value = "DATE '" ~ max_value ~ "'" %}
+                        {% set cast_statement = 'CAST(' ~ prop.name ~ ' AS DATE)' %}
+                    {% else %}
+                        {% set cast_statement = prop.name %}
+                    {% endif %}
+                    
+                    {% set max_check = cast_statement ~ ' <= ' ~ max_value %}
+                    {% set max_query = 'SELECT * FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT (' ~ max_check ~ ') LIMIT 10' %}
+                    {% set max_count = 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT (' ~ max_check ~ ')' %}
+                    
                     {% do tests.append({
                         'test_type': 'Schema',
                         'table_name': table_name,
@@ -108,12 +134,30 @@
                         'rule_name': 'maximum_value',
                         'description': 'checks if column ' ~ prop.name ~ ' is less than or equal to ' ~ prop.logicalTypeOptions.maximum,
                         'sql_check': max_check,
-                        'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE NOT (' ~ max_check ~ ') LIMIT 10',
-                        'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ max_check ~ ')'
+                        'sql': max_query,
+                        'sql_count': max_count
                     }) %}
                 {% endif %}
+                
                 {% if prop.logicalTypeOptions.minimum is defined %}
-                    {% set min_check = prop.name ~ ' >= ' ~ prop.logicalTypeOptions.minimum %}
+                    {% set cast_statement = '' %}
+                    {% set min_value = prop.logicalTypeOptions.minimum %}
+                    
+                    {# Handle different data types for comparison #}
+                    {% if prop.logicalType | lower in ['integer', 'number'] %}
+                        {% set cast_statement = 'SAFE_CAST(' ~ prop.name ~ ' AS ' ~ ('INT64' if prop.logicalType | lower == 'integer' else 'FLOAT64') ~ ')' %}
+                    {% elif prop.logicalType | lower == 'date' %}
+                        {# Format date literal properly with quotes #}
+                        {% set min_value = "DATE '" ~ min_value ~ "'" %}
+                        {% set cast_statement = 'CAST(' ~ prop.name ~ ' AS DATE)' %}
+                    {% else %}
+                        {% set cast_statement = prop.name %}
+                    {% endif %}
+                    
+                    {% set min_check = cast_statement ~ ' >= ' ~ min_value %}
+                    {% set min_query = 'SELECT * FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT (' ~ min_check ~ ') LIMIT 10' %}
+                    {% set min_count = 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT (' ~ min_check ~ ')' %}
+                    
                     {% do tests.append({
                         'test_type': 'Schema',
                         'table_name': table_name,
@@ -121,23 +165,36 @@
                         'rule_name': 'minimum_value',
                         'description': 'checks if column ' ~ prop.name ~ ' is greater than or equal to ' ~ prop.logicalTypeOptions.minimum,
                         'sql_check': min_check,
-                        'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE NOT (' ~ min_check ~ ') LIMIT 10',
-                        'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE NOT (' ~ min_check ~ ')'
+                        'sql': min_query,
+                        'sql_count': min_count
                     }) %}
                 {% endif %}
+                
                 {% if prop.logicalTypeOptions.pattern is defined %}
-                    {% set pattern_check = 'REGEXP_CONTAINS(' ~ prop.name ~ ', "' ~ prop.logicalTypeOptions.pattern ~ '")' %}
+                    {# For pattern matching, we need to carefully construct the regex to work in SQL #}
+                    {% set pattern_desc = prop.logicalTypeOptions.pattern | replace('"', '\\"') | replace('\\', '\\\\') %}
+                    {% set safe_pattern = prop.logicalTypeOptions.pattern 
+                                         | replace('"', '') 
+                                         | replace('\\s', '[[:space:]]')
+                                         | replace('\\(', '\\(')
+                                         | replace('\\)', '\\)')
+                                         | replace('\\+', '\\+')
+                                         | replace('\\*', '\\*')
+                                         | replace('\\?', '\\?') %}
+                    
                     {% do tests.append({
                         'test_type': 'Schema',
                         'table_name': table_name,
                         'column_name': prop.name,
                         'rule_name': 'pattern_match',
-                        'description': 'checks if column ' ~ prop.name ~ ' matches pattern ' ~ prop.logicalTypeOptions.pattern,
-                        'sql_check': prop.name ~ ' IS NULL OR ' ~ pattern_check,
-                        'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT (' ~ pattern_check ~ ') LIMIT 10',
-                        'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT (' ~ pattern_check ~ ')'
+                        'description': 'checks if column ' ~ prop.name ~ ' matches regex pattern',
+                        'pattern': pattern_desc,
+                        'sql_check': prop.name ~ ' IS NULL OR REGEXP_CONTAINS(' ~ prop.name ~ ', r"' ~ safe_pattern ~ '")',
+                        'sql': 'SELECT * FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT REGEXP_CONTAINS(' ~ prop.name ~ ', r"' ~ safe_pattern ~ '") LIMIT 10',
+                        'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT REGEXP_CONTAINS(' ~ prop.name ~ ', r"' ~ safe_pattern ~ '")'
                     }) %}
                 {% endif %}
+                
                 {% if prop.logicalTypeOptions.format is defined %}
                     {% set format_check = 'TRUE' %}  {# Placeholder; implement specific format checks as needed #}
                     {% do tests.append({
@@ -152,26 +209,6 @@
                     }) %}
                 {% endif %}
             {% endif %}
-        {% endif %}
-        
-        {# log or skip unused schema fields #}
-        {% if prop.physicalName is defined %}
-            {% do log("schema physical name: " ~ prop.physicalName, info=true) %}
-        {% endif %}
-        {% if prop.description is defined %}
-            {% do log("schema description: " ~ prop.description, info=true) %}
-        {% endif %}
-        {% if prop.businessName is defined %}
-            {% do log("schema business name: " ~ prop.businessName, info=true) %}
-        {% endif %}
-        {% if prop.tags is defined %}
-            {% do log("schema tags: " ~ prop.tags, info=true) %}
-        {% endif %}
-        {% if prop.classification is defined %}
-            {% do log("schema classification: " ~ prop.classification, info=true) %}
-        {% endif %}
-        {% if prop.transformLogic is defined %}
-            {% do log("schema transform logic: " ~ prop.transformLogic, info=true) %}
         {% endif %}
     {% endfor %}
     

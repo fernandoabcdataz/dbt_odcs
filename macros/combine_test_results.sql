@@ -27,23 +27,27 @@
                     '{{ test.column_name }}' AS column_name,
                     '{{ test.rule_name }}' AS rule_name,
                     {% if test.description is defined %}
-                    """{{ test.description }}""" AS description,
+                    -- clean multiline descriptions
+                    '{{ test.description | replace("\\", "\\\\") | replace("'", "\\'") | replace("\n", " ") }}' AS description,
                     {% else %}
                     'No description' AS description,
                     {% endif %}
                     {% if test.sql_check is defined %}
-                    """{{ test.sql_check }}""" AS sql_check,
+                    -- clean multiline SQL checks
+                    '{{ test.sql_check | replace("\\", "\\\\") | replace("'", "\\'") | replace("\n", " ") }}' AS sql_check,
                     {% else %}
                     'No SQL check' AS sql_check,
                     {% endif %}
                     {% if test.sql is defined %}
-                    """{{ test.sql }}""" AS sql,
+                    -- clean multiline SQL
+                    '{{ test.sql | replace("\\", "\\\\") | replace("'", "\\'") | replace("\n", " ") }}' AS sql,
                     {% else %}
                     'No SQL' AS sql,
                     {% endif %}
                     {% if test.sql_count is defined %}
-                    """{{ test.sql_count }}""" AS sql_count,
-                    ({{ test.sql_count }}) AS failed_records
+                    -- clean multiline SQL count
+                    '{{ test.sql_count | replace("\\", "\\\\") | replace("'", "\\'") | replace("\n", " ") }}' AS sql_count,
+                    ({{ test.sql_count | replace("\n", " ") }}) AS failed_records
                     {% else %}
                     'No SQL count' AS sql_count,
                     0 AS failed_records
