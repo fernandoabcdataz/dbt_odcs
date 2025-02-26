@@ -19,7 +19,6 @@
             {% set column_name = element_parts[1] if element_parts|length > 1 else element_parts[0] %}
             {% set interval_value = sla.value %}
             {% set interval_unit = sla.unit | default('d') %}
-            
             {# convert unit to days if needed #}
             {% set days = interval_value %}
             {% if interval_unit == 'w' or interval_unit == 'week' or interval_unit == 'weeks' %}
@@ -29,10 +28,8 @@
             {% elif interval_unit == 'y' or interval_unit == 'year' or interval_unit == 'years' %}
                 {% set days = interval_value * 365 %}  {# approximate #}
             {% endif %}
-            
             {% set freshness_check = 'DATE_DIFF(CURRENT_DATE(), MAX(CAST(' ~ column_name ~ ' AS DATE)), DAY) <= ' ~ days %}
             {% set freshness_query = 'SELECT CASE WHEN ' ~ freshness_check ~ ' THEN 0 ELSE 1 END AS result FROM ' ~ source_ref %}
-            
             {% do tests.append({
                 'test_type': 'Service-Level Agreement',
                 'table_name': table_name,
@@ -46,10 +43,11 @@
                 'sql': 'SELECT MAX(CAST(' ~ column_name ~ ' AS DATE)) as max_date, CURRENT_DATE() as current_date, DATE_DIFF(CURRENT_DATE(), MAX(CAST(' ~ column_name ~ ' AS DATE)), DAY) as days_old FROM ' ~ source_ref,
                 'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE DATE_DIFF(CURRENT_DATE(), CAST(' ~ column_name ~ ' AS DATE), DAY) > ' ~ days
             }) %}
+        
+        {# COMMENTED OUT
         {% elif sla.property in ['generalAvailability', 'endOfSupport', 'endOfLife'] %}
             {% set value = sla.value | string %}
             {% set date_check = 'CASE WHEN CAST(\'' ~ value ~ '\' AS TIMESTAMP) IS NOT NULL THEN 0 ELSE 1 END' %}
-            
             {% do tests.append({
                 'test_type': 'Service-Level Agreement',
                 'table_name': table_name,
@@ -59,13 +57,13 @@
                 'sql_check': 'CAST(\'' ~ value ~ '\' AS TIMESTAMP) IS NOT NULL',
                 'sql': 'SELECT CAST(\'' ~ value ~ '\' AS TIMESTAMP) as ' ~ sla.property,
                 'sql_count': 'SELECT 0 /* Always passes for timestamp validity checks */'
-            }) %}
+            }) %} END COMMENT #}
+
         {% elif sla.property == 'retention' %}
             {% set element_parts = sla.element.split('.') %}
             {% set column_name = element_parts[1] if element_parts|length > 1 else element_parts[0] %}
             {% set retention_value = sla.value %}
-            {% set retention_unit = sla.unit | default('d') %}
-            
+            {% set retention_unit = sla.unit | default('d') %}    
             {# convert unit to days if needed #}
             {% set days = retention_value %}
             {% if retention_unit == 'w' or retention_unit == 'week' or retention_unit == 'weeks' %}
@@ -75,10 +73,8 @@
             {% elif retention_unit == 'y' or retention_unit == 'year' or retention_unit == 'years' %}
                 {% set days = retention_value * 365 %}
             {% endif %}
-            
-            {# Check if the date columns oldest record meets the retention period #}
-            {% set retention_check = 'DATE_DIFF(CURRENT_DATE(), MIN(CAST(' ~ column_name ~ ' AS DATE)), DAY) <= ' ~ days %}
-            
+            {# check if the date columns oldest record meets the retention period #}
+            {% set retention_check = 'DATE_DIFF(CURRENT_DATE(), MIN(CAST(' ~ column_name ~ ' AS DATE)), DAY) <= ' ~ days %}            
             {% do tests.append({
                 'test_type': 'Service-Level Agreement',
                 'table_name': table_name,
@@ -92,12 +88,12 @@
                 'sql': 'SELECT MIN(CAST(' ~ column_name ~ ' AS DATE)) as min_date, CURRENT_DATE() as current_date, DATE_DIFF(CURRENT_DATE(), MIN(CAST(' ~ column_name ~ ' AS DATE)), DAY) as days_retained FROM ' ~ source_ref,
                 'sql_count': 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE DATE_DIFF(CURRENT_DATE(), CAST(' ~ column_name ~ ' AS DATE), DAY) > ' ~ days
             }) %}
+
         {% elif sla.property == 'latency' %}
             {% set element_parts = sla.element.split('.') %}
             {% set column_name = element_parts[1] if element_parts|length > 1 else element_parts[0] %}
             {% set latency_value = sla.value %}
             {% set latency_unit = sla.unit | default('h') %}
-            
             {# convert unit to hours if needed #}
             {% set hours = latency_value %}
             {% if latency_unit == 'm' or latency_unit == 'min' or latency_unit == 'minute' or latency_unit == 'minutes' %}
@@ -105,10 +101,8 @@
             {% elif latency_unit == 'd' or latency_unit == 'day' or latency_unit == 'days' %}
                 {% set hours = latency_value * 24 %}
             {% endif %}
-            
-            {# Check if the timestamp difference is within the latency requirement #}
-            {% set latency_check = 'TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), MAX(CAST(' ~ column_name ~ ' AS TIMESTAMP)), HOUR) <= ' ~ hours %}
-            
+            {# check if the timestamp difference is within the latency requirement #}
+            {% set latency_check = 'TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), MAX(CAST(' ~ column_name ~ ' AS TIMESTAMP)), HOUR) <= ' ~ hours %}            
             {% do tests.append({
                 'test_type': 'Service-Level Agreement',
                 'table_name': table_name,

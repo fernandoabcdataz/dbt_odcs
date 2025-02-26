@@ -257,29 +257,11 @@ slaProperties:
     element: food_events.date_created
     description: ensures data latency for date_created is within 4 hours
 
-  - property: generalAvailability
-    value: 2025-01-01T00:00:00Z
-    description: ensures data is generally available starting January 1, 2025
-
-  - property: endOfSupport
-    value: 2030-12-31T23:59:59Z
-    description: ensures support ends on December 31, 2030
-
-  - property: endOfLife
-    value: 2040-12-31T23:59:59Z
-    description: ensures the data product lifecycle ends on December 31, 2040
-
   - property: retention
     value: 7
     unit: y
     element: food_events.date_created
     description: ensures data retention for date_created is at least 7 years
-
-  - property: timeOfAvailability
-    value: "08:00-18:00"
-    element: food_events.date_created
-    driver: regulatory
-    description: ensures data is available between 8 AM and 6 PM daily for regulatory purposes
 
 support:
   - channel: fda_adverse_events
