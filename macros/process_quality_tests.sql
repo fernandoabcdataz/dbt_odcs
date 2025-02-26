@@ -1,6 +1,6 @@
 -- dbt_odcs/macros/process_quality_tests.sql
 
-{# Helper function to determine if a column might be a date type #}
+{# helper function to determine if a column might be a date type #}
 {% macro is_date_column(column_name) %}
     {% set date_indicators = ['date', 'created', 'modified', 'updated', 'timestamp', 'time', 'start', 'end', 'birth', 'death'] %}
     {% for indicator in date_indicators %}
@@ -32,7 +32,7 @@
                 {% if columns %}
                     {% set columns_str = columns | join(', ') %}
                     {% do tests.append({
-                        'test_type': 'Data Quality',
+                        'check_type': 'Data Quality',
                         'table_name': table_name,
                         'column_name': columns_str,
                         'rule_name': 'unique_combination',
@@ -54,7 +54,7 @@
                         {% set check = '(SELECT duplicate_count FROM (' ~ duplicates_query ~ ')) <= ' ~ quality.mustBeLessThan %}
                     {% endif %}
                     {% do tests.append({
-                        'test_type': 'Data Quality',
+                        'check_type': 'Data Quality',
                         'table_name': table_name,
                         'column_name': column,
                         'rule_name': 'duplicate_count',
@@ -73,7 +73,7 @@
                 {% endif %}
                 {% if check is defined %}
                     {% do tests.append({
-                        'test_type': 'Data Quality',
+                        'check_type': 'Data Quality',
                         'table_name': table_name,
                         'column_name': '',
                         'rule_name': 'row_count',
@@ -90,7 +90,7 @@
                 {% if column and allowed_values %}
                     {% set values_str = "'" ~ allowed_values | join("', '") ~ "'" %}
                     {% do tests.append({
-                        'test_type': 'Data Quality',
+                        'check_type': 'Data Quality',
                         'table_name': table_name,
                         'column_name': column,
                         'rule_name': 'value_in_set',
@@ -107,7 +107,7 @@
                 {% set condition = quality.get('condition', '') %}
                 {% if column and condition %}
                     {% do tests.append({
-                        'test_type': 'Data Quality',
+                        'check_type': 'Data Quality',
                         'table_name': table_name,
                         'column_name': column,
                         'rule_name': 'conditional_not_null',
@@ -123,7 +123,7 @@
                 {% set column = quality.get('column', '') %}
                 {% if column %}
                     {% do tests.append({
-                        'test_type': 'Data Quality',
+                        'check_type': 'Data Quality',
                         'table_name': table_name,
                         'column_name': column,
                         'rule_name': 'not_null',
@@ -138,7 +138,7 @@
         {% elif quality.type == 'text' %}
             {% do log("Text quality rule: " ~ quality.description, info=true) %}
             {% do tests.append({
-                'test_type': 'Data Quality',
+                'check_type': 'Data Quality',
                 'table_name': table_name,
                 'column_name': '',
                 'rule_name': 'text_description',
@@ -243,7 +243,7 @@
             
             {% if check is defined %}
                 {% do tests.append({
-                    'test_type': 'Data Quality',
+                    'check_type': 'Data Quality',
                     'table_name': table_name,
                     'column_name': quality.column | default(''),
                     'rule_name': 'custom_sql_' ~ (quality.name | default('sql_check')),
@@ -257,7 +257,7 @@
         {% elif quality.type == 'custom' %}
             {% do log("Custom quality rule (vendor-specific): " ~ quality.engine ~ ' - ' ~ quality.implementation, info=true) %}
             {% do tests.append({
-                'test_type': 'Data Quality',
+                'check_type': 'Data Quality',
                 'table_name': table_name,
                 'column_name': quality.column | default(''),
                 'rule_name': 'custom_' ~ (quality.engine | default('vendor')) ~ '_' ~ (quality.name | default('check')),

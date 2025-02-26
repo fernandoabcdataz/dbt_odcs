@@ -31,7 +31,7 @@
             {% set freshness_check = 'DATE_DIFF(CURRENT_DATE(), MAX(CAST(' ~ column_name ~ ' AS DATE)), DAY) <= ' ~ days %}
             {% set freshness_query = 'SELECT CASE WHEN ' ~ freshness_check ~ ' THEN 0 ELSE 1 END AS result FROM ' ~ source_ref %}
             {% do tests.append({
-                'test_type': 'Service-Level Agreement',
+                'check_type': 'Service-Level Agreement',
                 'table_name': table_name,
                 'column_name': column_name,
                 'rule_name': 'freshness',
@@ -49,7 +49,7 @@
             {% set value = sla.value | string %}
             {% set date_check = 'CASE WHEN CAST(\'' ~ value ~ '\' AS TIMESTAMP) IS NOT NULL THEN 0 ELSE 1 END' %}
             {% do tests.append({
-                'test_type': 'Service-Level Agreement',
+                'check_type': 'Service-Level Agreement',
                 'table_name': table_name,
                 'column_name': '',
                 'rule_name': sla.property,
@@ -76,7 +76,7 @@
             {# check if the date columns oldest record meets the retention period #}
             {% set retention_check = 'DATE_DIFF(CURRENT_DATE(), MIN(CAST(' ~ column_name ~ ' AS DATE)), DAY) <= ' ~ days %}            
             {% do tests.append({
-                'test_type': 'Service-Level Agreement',
+                'check_type': 'Service-Level Agreement',
                 'table_name': table_name,
                 'column_name': column_name,
                 'rule_name': 'retention',
@@ -104,7 +104,7 @@
             {# check if the timestamp difference is within the latency requirement #}
             {% set latency_check = 'TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), MAX(CAST(' ~ column_name ~ ' AS TIMESTAMP)), HOUR) <= ' ~ hours %}            
             {% do tests.append({
-                'test_type': 'Service-Level Agreement',
+                'check_type': 'Service-Level Agreement',
                 'table_name': table_name,
                 'column_name': column_name,
                 'rule_name': 'latency',

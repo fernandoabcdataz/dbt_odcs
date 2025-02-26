@@ -41,10 +41,6 @@ schema:
         unique: true
         tags: ['identifier', 'critical']
         classification: public
-        logicalTypeOptions:
-          pattern: "^(?:[0-9]{6}|[A-Z]{4}-[0-9]{6}|[0-9]{4}-CFS-[0-9]{6})$"
-          minLength: 6
-          maxLength: 15
 
       - name: reactions
         logicalType: string
@@ -53,9 +49,6 @@ schema:
         description: descriptions of adverse reactions experienced, often multiple conditions in quotes and commas.
         tags: ['sensitive', 'medical']
         classification: restricted
-        logicalTypeOptions:
-          maxLength: 2000
-          pattern: "^\"?[A-Za-z0-9\\s,/]+\"?(, ?\"?[A-Za-z0-9\\s,/]+\"?)*$"
 
       - name: outcomes
         logicalType: string
@@ -64,8 +57,6 @@ schema:
         description: outcomes of the adverse events (e.g., Hospitalization, Death, Disability).
         tags: ['outcome', 'health']
         classification: public
-        logicalTypeOptions:
-          pattern: "^(Hospitalization|Death|Disability|Other Serious or Important Medical Event|Visited Emergency Room|Visited a Health Care Provider|Other Outcome|Life Threatening|Required Intervention)*$"
 
       - name: products_brand_name
         logicalType: string
@@ -74,29 +65,20 @@ schema:
         description: brand name of the product involved in the adverse event.
         tags: ['product']
         classification: public
-        logicalTypeOptions:
-          maxLength: 100
-          pattern: "^[A-Za-z0-9\\s\\(\\)-]+$"
 
       - name: products_industry_code
         logicalType: integer
         physicalType: integer
         required: false
         description: industry code of the product, typically a numeric code (e.g., 54 for vitamins/minerals).
-        logicalTypeOptions:
-          minimum: 1
-          maximum: 99
-          multipleOf: 1
 
       - name: products_role
         logicalType: string
         physicalType: string
         required: false
-        description: role of the product in the event (e.g., suspect, concomitant).
+        description: role of the product in the event (e.g., SUSPECT, CONCOMITANT).
         tags: ['product', 'role']
         classification: public
-        logicalTypeOptions:
-          pattern: "^(suspect|concomitant)$"
 
       - name: products_industry_name
         logicalType: string
@@ -105,8 +87,6 @@ schema:
         description: name of the product’s industry category (e.g., Vit/Min/Prot/Unconv Diet).
         tags: ['industry']
         classification: public
-        logicalTypeOptions:
-          pattern: "^[A-Za-z/]+$"
 
       - name: date_created
         logicalType: date
@@ -115,10 +95,6 @@ schema:
         description: date the report was created, typically in YYYY-MM-DD format.
         tags: ['timestamp']
         classification: public
-        logicalTypeOptions:
-          format: "yyyy-MM-dd"
-          minimum: "2005-01-01"
-          maximum: "2025-12-31"
 
       - name: date_started
         logicalType: date
@@ -127,10 +103,6 @@ schema:
         description: date the adverse event started, if known, in YYYY-MM-DD format.
         tags: ['timestamp']
         classification: public
-        logicalTypeOptions:
-          format: "yyyy-MM-dd"
-          minimum: "1900-01-01"
-          maximum: "2025-12-31"
 
       - name: consumer_gender
         logicalType: string
@@ -139,18 +111,12 @@ schema:
         description: gender of the consumer (e.g., Male, Female).
         tags: ['personal']
         classification: restricted
-        logicalTypeOptions:
-          pattern: "^(Male|Female)?$"
 
       - name: consumer_age
         logicalType: integer
         physicalType: integer
         required: false
         description: age of the consumer, if provided.
-        logicalTypeOptions:
-          minimum: 0
-          maximum: 150
-          multipleOf: 1
 
       - name: consumer_age_unit
         logicalType: string
@@ -159,8 +125,6 @@ schema:
         description: unit of consumer age (e.g., years), if age is provided.
         tags: ['personal']
         classification: restricted
-        logicalTypeOptions:
-          pattern: "^(years|months)?$"
 
 quality:
   - type: library
@@ -172,9 +136,9 @@ quality:
   - type: library
     rule: valueInSet
     column: products_role
-    allowedValues: ["suspect", "concomitant"]
+    allowedValues: ["SUSPECT", "CONCOMITANT"]
     name: valid_product_roles
-    description: ensures products_role contains only valid values (suspect or concomitant)
+    description: ensures products_role contains only valid values (SUSPECT or CONCOMITANT)
 
   - type: library
     rule: conditionalNotNull

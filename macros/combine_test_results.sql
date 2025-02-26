@@ -5,12 +5,11 @@
     
     {% if all_tests|length == 0 %}
         SELECT 
-            'no_tests' as test_id,
-            'No Tests' as test_type,
+            'no tests' as check_type,
             'none' as table_name,
             'none' as column_name,
             'none' as rule_name,
-            'No tests were generated' as description,
+            'no tests were generated' as description,
             'none' as sql_check,
             'none' as sql,
             'none' as sql_count,
@@ -18,11 +17,11 @@
             'SKIPPED' as test_status,
             CURRENT_TIMESTAMP() as execution_time
     {% else %}
+
         WITH test_results AS (
             {% for test in all_tests %}
                 SELECT
-                    CONCAT('{{ test.test_type }}', ': ', '{{ test.rule_name }}', '_', '{{ test.column_name }}') AS test_id,
-                    '{{ test.test_type }}' AS test_type,
+                    '{{ test.check_type }}' AS check_type,
                     '{{ test.table_name }}' AS table_name,
                     '{{ test.column_name }}' AS column_name,
                     '{{ test.rule_name }}' AS rule_name,
@@ -55,9 +54,9 @@
                     {% if not loop.last %} UNION ALL {% endif %}
             {% endfor %}
         )
+
         SELECT
-            test_id,
-            test_type,
+            check_type,
             table_name,
             column_name,
             rule_name,
@@ -69,6 +68,6 @@
             CASE WHEN failed_records > 0 THEN 'FAILED' ELSE 'PASSED' END AS test_status,
             CURRENT_TIMESTAMP() AS execution_time
         FROM test_results
-        ORDER BY test_type, table_name, column_name, rule_name
+        ORDER BY check_type, table_name, column_name, rule_name
     {% endif %}
 {% endmacro %}

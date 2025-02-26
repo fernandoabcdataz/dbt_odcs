@@ -32,7 +32,7 @@
                 {% set array_check = array_check ~ ' AND ' ~ item_check %}
             {% endif %}
             {% do tests.append({
-                'test_type': 'Schema',
+                'check_type': 'Schema',
                 'table_name': table_name,
                 'column_name': prop.name,
                 'rule_name': 'array_structure',
@@ -51,7 +51,7 @@
                 'boolean': 'CAST(' ~ prop.name ~ ' AS BOOLEAN) IS NOT NULL OR ' ~ prop.name ~ ' IS NULL'
             }.get(prop.logicalType | lower, 'TRUE') %}
             {% do tests.append({
-                'test_type': 'Schema',
+                'check_type': 'Schema',
                 'table_name': table_name,
                 'column_name': prop.name,
                 'rule_name': 'data_type',
@@ -66,7 +66,7 @@
             {# required/not null test #}
             {% if prop.get('required', false) %}
                 {% do tests.append({
-                    'test_type': 'Schema',
+                    'check_type': 'Schema',
                     'table_name': table_name,
                     'column_name': prop.name,
                     'rule_name': 'not_null',
@@ -80,7 +80,7 @@
             {# unique test #}
             {% if prop.get('unique', false) %}
                 {% do tests.append({
-                    'test_type': 'Schema',
+                    'check_type': 'Schema',
                     'table_name': table_name,
                     'column_name': prop.name,
                     'rule_name': 'unique',
@@ -94,7 +94,7 @@
             {# primary key test #}
             {% if prop.get('primaryKey', false) %}
                 {% do tests.append({
-                    'test_type': 'Schema',
+                    'check_type': 'Schema',
                     'table_name': table_name,
                     'column_name': prop.name,
                     'rule_name': 'unique',
@@ -128,7 +128,7 @@
                     {% set max_count = 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT (' ~ max_check ~ ')' %}
                     
                     {% do tests.append({
-                        'test_type': 'Schema',
+                        'check_type': 'Schema',
                         'table_name': table_name,
                         'column_name': prop.name,
                         'rule_name': 'maximum_value',
@@ -159,7 +159,7 @@
                     {% set min_count = 'SELECT COUNT(*) FROM ' ~ source_ref ~ ' WHERE ' ~ prop.name ~ ' IS NOT NULL AND NOT (' ~ min_check ~ ')' %}
                     
                     {% do tests.append({
-                        'test_type': 'Schema',
+                        'check_type': 'Schema',
                         'table_name': table_name,
                         'column_name': prop.name,
                         'rule_name': 'minimum_value',
@@ -183,7 +183,7 @@
                                          | replace('\\?', '\\?') %}
                     
                     {% do tests.append({
-                        'test_type': 'Schema',
+                        'check_type': 'Schema',
                         'table_name': table_name,
                         'column_name': prop.name,
                         'rule_name': 'pattern_match',
@@ -198,7 +198,7 @@
                 {% if prop.logicalTypeOptions.format is defined %}
                     {% set format_check = 'TRUE' %}  {# Placeholder; implement specific format checks as needed #}
                     {% do tests.append({
-                        'test_type': 'Schema',
+                        'check_type': 'Schema',
                         'table_name': table_name,
                         'column_name': prop.name,
                         'rule_name': 'format_check',
